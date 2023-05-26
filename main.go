@@ -13,22 +13,29 @@ import (
 	"os/exec"
 )
 
-var myKeyFile string = "/Users/rebontadeb/Dropbox/DOCS/SECRETS/key.txt"
-var myPlaintextFile string = "/Users/rebontadeb/Dropbox/DOCS/SECRETS/plaintext.txt"
-var myEncodedFile string = "/Users/rebontadeb/Dropbox/DOCS/SECRETS/ciphertext.bin"
-
 func main() {
+	var path string
+	fmt.Print("Enter Your Secret Path: ")
+	_, err1 := fmt.Scanf("%s", &path)
+	if err1 != nil {
+		fmt.Println("Error reading input path:", err1)
+	}
+
+	var myKeyFile string = path + "/key.txt"
+	var myPlaintextFile string = path + "/plaintext.txt"
+	var myEncodedFile string = path + "/ciphertext.bin"
+
 	if _, err := os.Stat(myPlaintextFile); err == nil {
 		fmt.Println("Encoding Starts:")
-		encryptFile()
+		encryptFile(myKeyFile, myPlaintextFile, myEncodedFile)
 	} else {
 		fmt.Println("Decoding Starts:")
-		decryptFile()
+		decryptFile(myKeyFile, myPlaintextFile, myEncodedFile)
 	}
 }
 
-func encryptFile() {
-	createAesKey()
+func encryptFile(myKeyFile string, myPlaintextFile string, myEncodedFile string) {
+	createAesKey(myKeyFile)
 	// Reading plaintext file
 	plainText, err := ioutil.ReadFile(myPlaintextFile)
 	if err != nil {
@@ -67,14 +74,15 @@ func encryptFile() {
 	if err != nil {
 		log.Fatalf("write file err: %v", err.Error())
 	} else {
+		fmt.Println("Encoded File Generated : " + myEncodedFile)
 		os.Remove(myPlaintextFile)
 		os.Remove(myKeyFile)
 	}
 
 }
 
-func decryptFile() {
-	createAesKey()
+func decryptFile(myKeyFile string, myPlaintextFile string, myEncodedFile string) {
+	createAesKey(myKeyFile)
 	// Reading ciphertext file
 	cipherText, err := ioutil.ReadFile(myEncodedFile)
 	if err != nil {
@@ -112,13 +120,14 @@ func decryptFile() {
 	if err != nil {
 		log.Fatalf("write file err: %v", err.Error())
 	} else {
+		fmt.Println("Plaintext File Generated : " + myPlaintextFile)
 		os.Remove(myEncodedFile)
 		os.Remove(myKeyFile)
 	}
 
 }
 
-func createAesKey() {
+func createAesKey(myKeyFile string) {
 
 	var strInput string
 	var passInput string
@@ -127,20 +136,17 @@ func createAesKey() {
 	if err != nil {
 		fmt.Println("Error reading input:", err)
 	}
-	//hexString := hex.EncodeToString([]byte(strInput))
 
 	fmt.Print("Enter your Password: ")
 	_, err1 := fmt.Scanf("%s", &passInput)
 	if err1 != nil {
 		fmt.Println("Error reading input:", err1)
 	}
-
 	hexPassInput := hex.EncodeToString([]byte(passInput))
 
 	mycmd := "openssl enc -aes-128-cbc -k " + strInput + " -S " + hexPassInput + " -P -md sha256 | awk '/key=/{print $1}'|cut -d'=' -f2|tr -d '\n'"
 	out, _ := exec.Command("bash", "-c", mycmd).Output()
 
-	//fmt.Print(string(out))
 	err = ioutil.WriteFile(myKeyFile, out, 0777)
 	if err != nil {
 		log.Fatalf("write file err: %v", err.Error())
